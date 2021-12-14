@@ -6,6 +6,7 @@
 parameters:
     app.path.files_upload: /uploads/files
     treezor_path : https://facnote.sandbox.treezor.co/v1/
+    brochures_directory: '%kernel.project_dir%/public/uploads/entries'
 services:
     # default configuration for services in *this* file
     _defaults:
@@ -32,6 +33,8 @@ services:
             $walletEditUrl: '%treezor_path%/wallets/{id}'
             $walletDeleteUrl: '%treezor_path%/wallets/{id}'
 
+            # Sage ClickUp
+            $baseUrlApi: 'https://cloudconnector.linkup-sage.com/v1'
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
@@ -53,3 +56,4 @@ services:
     App\OpenApi\JwtDecorator:
         decorates: 'api_platform.openapi.factory'
         autoconfigure: false
+    

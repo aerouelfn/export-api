@@ -13,7 +13,8 @@ use App\Service\ClientHttpService;
 use Symfony\Component\Security\Core\Security;
 use Symfony\Component\Dotenv\Dotenv;
 use App\Service\App\SerializeService;
-
+use Doctrine\ORM\EntityManager;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
 class SageClickUpService
 {
@@ -21,9 +22,9 @@ class SageClickUpService
     private $cltHttpService;
     private $ConnectedUser;
     private $security;
-    private $statusNotFound=['401','402','403','404'];
+    private $statusNotFound=['401','402','403','404','415'];
     private $statusErrorServer=['500','501','503'];
-    /** @var SerializeService $serializer */
+    private $baseUrlApi='https://cloudconnector.linkup-sage.com/v1';
     private $serializer;
     /**
      * ClientHttpService constructor.
@@ -34,16 +35,21 @@ class SageClickUpService
         $this->em=$em;
         $this->cltHttpService=$cltHttpService;
         $this->security = $security;
-        $this->serializer = $serializeService;
         $this->loginSage();
+        $this->serializer = $serializeService;
+        
 
     }
+    /**
+     * get Accounting Practices function
+     *
+     * @return void
+     */
     public function getAccountingPractices(){
-        $base_url="https://cloudconnector.linkup-sage.com/v1";
         $user=$this->ConnectedUser;
         $app_id=$user->getSageconfigs()->first()->getAppId();
         $tokenAccess=$user->getSageconfigs()->first()->getToken();
-        $url=$base_url.'/applications/'.$app_id.'/accountancypractices';
+        $url=$this->baseUrlApi.'/applications/'.$app_id.'/accountancypractices';
         $result=$this->cltHttpService->execute($url,"GET",[],$tokenAccess);
         $em=$this->em;
         if(in_array($result["status"],$this->statusNotFound)){
@@ -56,27 +62,37 @@ class SageClickUpService
             return $result["content"];
         }
     }
-
+    /**
+     * Get Options For Accounting Practice  function
+     *
+     * @param String $accountPractice
+     * @return void
+     */
     public function getOptionAccountingPractice($accountPractice){
-		$base_url="https://cloudconnector.linkup-sage.com/v1";
         $user=$this->ConnectedUser;
         $app_id=$user->getSageconfigs()->first()->getAppId();
         $tokenAccess=$user->getSageconfigs()->first()->getToken();
         $accountPractice='5a84d143-5fb1-4fce-bac0-b19ec942231c';
-        $url=$base_url . '/accountancypractices/' . $accountPractice . '/applications/' . $app_id . '/options';
+        $url=$this->baseUrlApi . '/accountancypractices/' . $accountPractice . '/applications/' . $app_id . '/options';
         return $this->cltHttpService->execute($url,"GET",[],$tokenAccess);
     }
-
+    /**
+     * Get Periods function
+     *
+     * @param string $accountPractice
+     * @param string $companyId
+     * @return void
+     */
     public function getPeriods($accountPractice,$companyId)
     {       
-		$base_url="https://cloudconnector.linkup-sage.com/v1";
         $user=$this->ConnectedUser;
         $app_id=$user->getSageconfigs()->first()->getAppId();
         $tokenAccess=$user->getSageconfigs()->first()->getToken();
-        $url=$base_url.'/applications/'.$app_id.'/accountancypractices/'.$accountPractice.'/companies/'.$companyId.'/accounting/periods';
+        $url=$this->baseUrlApi.'/applications/'.$app_id.'/accountancypractices/'.$accountPractice.'/companies/'.$companyId.'/accounting/periods';
         $result = $this->cltHttpService->execute($url,"GET",[],$tokenAccess);
         $em=$this->em;
         $company = $em->getRepository(Company::class)->findOneBy(["SageId"=>$companyId]);
+        
         if(in_array($result["status"],$this->statusNotFound)){
             return $result["content"];
         }else if(in_array($result["status"],$this->statusErrorServer)){
@@ -87,24 +103,74 @@ class SageClickUpService
             return $result["content"];
         }
     }
+    /**
+     * Get Trading Accounts function
+     *
+     * @param string $accountPractice
+     * @param string $companyId
+     * @param string $periodId
+     * @return void
+     */
+    public function getTradingAccounts(string $accountPractice,string $companyId,string $periodId){
+        $user = $this->ConnectedUser;
+        $appId=$user->getSageconfigs()->first()->getAppId();
+        $tokenAccess=$user->getSageconfigs()->first()->getToken();
+        $url=$this->baseUrlApi.'/applications/'.$appId.'/accountancypractices/'.$accountPractice.'/companies/'.$companyId.'/accounting/periods/'.$periodId.'/accounts/trading';
+        return $this->cltHttpService->execute($url,"GET",[],$tokenAccess);
 
-    public function createEntry()
-    {       
-		$base_url="https://cloudconnector.linkup-sage.com/v1";
-        $user=$this->ConnectedUser;
-        $app_id=$user->getSageconfigs()->first()->getAppId();
-        $tokenAccess=$user->getSageconfigs()->first()->getToken();
-        $url=$base_url.'/applications/'.$app_id.'/accountancypractices/{accountancyPracticeId}/companies/487697724/accounting/periods/{periodId}/entries';
-        return $this->cltHttpService->execute($url,"POST",[],$tokenAccess);
     }
-	
-	public function getCompanies($accountPractice){
-		$base_url="https://cloudconnector.linkup-sage.com/v1";
+    /**
+     * Create Entry function
+     *
+     * @param string $accountPractice
+     * @param string $companyId
+     * @param string $periodId
+     * @param array $attachement
+     * @param array $entry
+     * @return void
+     */
+    public function createEntry(string $accountPractice,string $companyId,string $periodId,$attachement,$entry)
+    {
+        $user=$this->ConnectedUser;
+        $appId=$user->getSageconfigs()->first()->getAppId();
+        $tokenAccess=$user->getSageconfigs()->first()->getToken();
+        $url=$this->baseUrlApi.'/applications/'.$appId.'/accountancypractices/'.$accountPractice.'/companies/'.$companyId.'/accounting/periods/'.$periodId.'/entries';
+        $result=$this->cltHttpService->execute($url,"POST",["entry"=>$entry,"attachement"=>$attachement],$tokenAccess,2);
+        $response=[];
+        if(in_array($result["status"],$this->statusNotFound)){
+            $response["content"]="ko";
+        }else{
+            $response["content"]=$result["content"];
+        }
+        return $response;
+    }
+    /**
+     * Get Entries function
+     *
+     * @param string $accountPractice
+     * @param string $companyId
+     * @param string $periodId
+     * @return void
+     */
+    public function getEntries(string $accountPractice,string $companyId,string $periodId)
+    {       
+        $user=$this->ConnectedUser;
+        $appId=$user->getSageconfigs()->first()->getAppId();
+        $tokenAccess=$user->getSageconfigs()->first()->getToken();
+        $url=$this->baseUrlApi.'/applications/'.$appId.'/accountancypractices/'.$accountPractice.'/companies/'.$companyId.'/accounting/periods/'.$periodId.'/entries';
+        return $this->cltHttpService->execute($url,"GET",[],$tokenAccess);
+    }
+	/**
+     * get Companies function
+     *
+     * @param string $accountPractice
+     * @return void
+     */
+	public function getCompanies(string $accountPractice){
         $user=$this->ConnectedUser;
         $app_id=$user->getSageconfigs()->first()->getAppId();
         $tokenAccess=$user->getSageconfigs()->first()->getToken();
-		//$accountPractice='5a84d143-5fb1-4fce-bac0-b19ec942231c';
-        $url=$base_url.'/applications/'.$app_id.'/accountancypractices/'.$accountPractice.'/companies';
+        $url=$this->baseUrlApi.'/applications/'.$app_id.'/accountancypractices/'.$accountPractice.'/companies';
         $result= $this->cltHttpService->execute($url,"GET",[],$tokenAccess);
         $em=$this->em;
         $accountPracticeObj=$em->getRepository(AccountancyPractice::class)->findOneBy(["SageId"=>$accountPractice]);
@@ -119,24 +185,26 @@ class SageClickUpService
             return $result["content"];
         }
 	}
-	
+	/**
+     * Create Batch function
+     *
+     * @return void
+     */
     public function createBatch()
     {
-		$base_url="https://cloudconnector.linkup-sage.com/v1";
         $user=$this->ConnectedUser;
         $app_id=$user->getSageconfigs()->first()->getAppId();
         $tokenAccess=$user->getSageconfigs()->first()->getToken();
 		$accountPractice='5a84d143-5fb1-4fce-bac0-b19ec942231c';
 		$companyId='22df8495-6357-44b2-8ea0-05272756d1da';
-        $url=$base_url.'/applications/{applicationId}/accountancypractices/'.$accountPractice.'/companies/'.$companyId.'/queues/in/batches';
+        $url=$this->baseUrlApi.'/applications/{applicationId}/accountancypractices/'.$accountPractice.'/companies/'.$companyId.'/queues/in/batches';
         return $this->cltHttpService->execute($url,"POST",[],$tokenAccess);
     }
-
-    public function getAccountancyPractices()
-    {
-        $user=$this->ConnectedUser;
-
-    }
+    /**
+     * Login Sage ClickUp function
+     *
+     * @return void
+     */
     private function loginSage(){
         $user=$this->security->getUser();
         $em = $this->em;
@@ -149,19 +217,18 @@ class SageClickUpService
             $client_id=$user->getSageconfigs()->first()->getClientId();
             $client_secret=$user->getSageconfigs()->first()->getClientSecret();
             $audience=$user->getSageconfigs()->first()->getAudience();
-            $response=$this->cltHttpService->executeAuth($url_auth,"POST",
+            $response=$this->cltHttpService->execute($url_auth,"POST",
             [
                 "grant_type"=>$grant_type,
                 "client_id"=>$client_id,
                 "client_secret"=>$client_secret,
                 "audience"=>$audience
-            ]
-            );
-            if(isset($response["access_token"])){
+            ],"",1);
+            $response["content"]=json_decode($response["content"],true);
+            if(isset($response["content"]["access_token"])){
                 $now = new \DateTime();
-                $now->add(new \DateInterval('PT'.$response["expires_in"].'S'));
-                $sageModel->setToken($response["access_token"]);
-                
+                $now->add(new \DateInterval('PT'.$response["content"]["expires_in"].'S'));
+                $sageModel->setToken($response["content"]["access_token"]);
                 $sageModel->setExpiredToken($now);
                 $em->persist($sageModel);
                 $em->flush();
@@ -174,8 +241,15 @@ class SageClickUpService
         }
         
     }
-
-    public function saveAccountancyPractices($content,$em,$user){
+    /**
+     * Save Accountancy Practices function
+     *
+     * @param Array $content
+     * @param EntityManager $em
+     * @param User $user
+     * @return void
+     */
+    public function saveAccountancyPractices(array $content,EntityManager $em,User $user){
         $query = $em->createQuery(
             'DELETE FROM App\Entity\AccountancyPractice e WHERE e.sageModel = :id_sage_model'
          )->setParameter('id_sage_model', $user->getSageconfigs()->first())->execute();
@@ -194,8 +268,15 @@ class SageClickUpService
             $em->flush();
         }        
     }
-
-    public function saveCompanies($content,$em,$accountancyPractice){
+    /**
+     * save Companies function
+     *
+     * @param Array $content
+     * @param EntityManager $em
+     * @param AccountancyPractice $accountancyPractice
+     * @return void
+     */
+    public function saveCompanies(array $content,EntityManager $em,AccountancyPractice $accountancyPractice){
         $query = $em->createQuery(
             'DELETE FROM App\Entity\Company a WHERE a.accountancyPractice = :accountancy_practice'
          )->setParameter('accountancy_practice', $accountancyPractice)->execute();
@@ -213,7 +294,14 @@ class SageClickUpService
             $em->flush();
         }        
     }
-
+    /**
+     * Save Financial Period function
+     *
+     * @param [type] $content
+     * @param [type] $em
+     * @param [type] $company
+     * @return void
+     */
     public function saveFinancialPeriods($content,$em,$company){
         $query = $em->createQuery(
             'DELETE FROM App\Entity\FinancialPeriod f WHERE f.company = :company'

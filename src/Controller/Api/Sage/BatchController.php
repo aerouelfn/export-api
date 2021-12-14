@@ -14,7 +14,7 @@ class BatchController extends SageController
      * @Route("/api/sage/batch/createBatch/accountPractice/{accountPractice}/companyId/{companyId}", name="sage_batch_create_batch")
      */
     public function createBatch(SageClickUpService $sageService){
-        $resp=$sageService->createEntry();
+        $resp=$sageService->createBatch();
         $response = new Response();
         $response->setContent($resp);
         $response->headers->set('Content-Type', 'application/json');

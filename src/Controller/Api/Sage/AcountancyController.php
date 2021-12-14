@@ -21,8 +21,7 @@ class AcountancyController extends AbstractController
         $response->setContent($resp);
         $response->headers->set('Content-Type', 'application/json');
         return $response;
-    }
-	
+    }	
 	/**
      * @Route("/api/sage/accountancy/getAccountancyPracticesOption/accountPractice/{accountPractice}", name="sage_options_accountancy_practices")
      */
@@ -31,7 +30,7 @@ class AcountancyController extends AbstractController
 		$accountPractice=( $request->attributes->get('accountPractice')) ? $request->attributes->get('accountPractice') :'5a84d143-5fb1-4fce-bac0-b19ec942231c';
 		$resp=$sageService->getOptionAccountingPractice($accountPractice);
         $response = new Response();
-        $response->setContent($resp);
+        $response->setContent($resp["content"]);
         $response->headers->set('Content-Type', 'application/json');
         return $response;
     }

@@ -24,6 +24,9 @@ class FileUploader
         $safeFilename = $this->slugger->slug($originalFilename);
         $fileName = $safeFilename.'-'.uniqid().'.'.$file->guessExtension();
         $validateFile=$this->validateFile($file);
+        if($validateFile === false){
+            return false;
+        }
         try {
             $file->move($this->getTargetDirectory(), $fileName);
         } catch (FileException $e) {

@@ -7,6 +7,7 @@ parameters:
     app.path.files_upload: /uploads/files
     treezor_path : https://facnote.sandbox.treezor.co/v1/
     brochures_directory: '%kernel.project_dir%/public/uploads/entries'
+    baseUrlApi: 'https://cloudconnector.linkup-sage.com/v1'
 services:
     # default configuration for services in *this* file
     _defaults:
@@ -56,4 +57,9 @@ services:
     App\OpenApi\JwtDecorator:
         decorates: 'api_platform.openapi.factory'
         autoconfigure: false
-    
+    App\Service\FileUploader:
+        arguments:
+            $targetDirectory: '%brochures_directory%'
+    App\Service\SageClickUpService:
+        arguments:
+            $baseUrlSageApi: '%baseUrlApi%'

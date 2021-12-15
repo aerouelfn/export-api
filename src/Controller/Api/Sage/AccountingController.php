@@ -51,19 +51,15 @@ class AccountingController extends SageController
 
         
         if ($attachement) {
-            $originalFilename = pathinfo($attachement->getClientOriginalName(), PATHINFO_FILENAME);
-
-           try {                
-                $fileUploader->upload($attachement);
-                $attachement=$this->getParameter('brochures_directory')."/".$newFilename;
-            } catch (FileException $e) {
+            $statusUploadFile=$fileUploader->upload($attachement);
+            if($statusUploadFile === false){
                 $response = new Response();
                 $response->setContent("Error Upload File");
                 $response->setStatusCode(Response::HTTP_OK);
                 $response->headers->set('Content-Type', 'application/json');
                 return $response;
-                die("error upload");
             }
+             $attachement= $this->getParameter("baseUrlApi")."/".$statusUploadFile;
         }
         $resp=$sageService->createEntry($accountPractice,$companyId,$periodId,$attachement,$entry);
         $response = new Response();

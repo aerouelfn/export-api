@@ -24,19 +24,20 @@ class SageClickUpService
     private $security;
     private $statusNotFound=['401','402','403','404','415'];
     private $statusErrorServer=['500','501','503'];
-    private $baseUrlApi='https://cloudconnector.linkup-sage.com/v1';
+    private $baseUrlApi;
     private $serializer;
     /**
      * ClientHttpService constructor.
      *
      */
-    public function __construct(EntityManagerInterface $em,ClientHttpService $cltHttpService,Security $security,SerializeService $serializeService)
+    public function __construct(EntityManagerInterface $em,ClientHttpService $cltHttpService,Security $security,SerializeService $serializeService,$baseUrlSageApi)
     {
         $this->em=$em;
         $this->cltHttpService=$cltHttpService;
         $this->security = $security;
         $this->loginSage();
         $this->serializer = $serializeService;
+        $this->baseUrlApi = $baseUrlSageApi;
         
 
     }

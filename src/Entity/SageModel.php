@@ -57,6 +57,10 @@ class SageModel
      * @ORM\Column(type="datetime",nullable=true)
      */
     private $expiredtoken;
+    /**
+     * @ORM\Column(type="string", length=255, nullable=false, unique=true)
+     */
+    private $AccountancyPractice;
 
     /**
      * @var \App\Entity\User
@@ -163,6 +167,17 @@ class SageModel
     public function setExpiredtoken($expiredtoken): self
     {
         $this->expiredtoken = $expiredtoken;
+
+        return $this;
+    }
+    public function getAccountancyPractice(): ?string
+    {
+        return $this->AccountancyPractice;
+    }
+
+    public function setAccountancyPractice(?string $AccountancyPractice): self
+    {
+        $this->AccountancyPractice = $AccountancyPractice;
 
         return $this;
     }
